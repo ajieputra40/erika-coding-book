@@ -233,26 +233,28 @@ function Section1Greeting({ friendName }) {
       `Hi ${friendName}. Welcome to Erika's birthday coding adventure. Thank you for being Erika's friend and celebrating this special day.`,
     [friendName]
   );
-  const [subtitleIndex, setSubtitleIndex] = useState(0);
+  const [subtitleIndex, setSubtitleIndex] = useState(subtitleText.length);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showPlayHint, setShowPlayHint] = useState(false);
+
+  const startSpeech = (force = false) =>
+    speakGreeting(friendName, {
+      force,
+      onStart: () => {
+        setIsSpeaking(true);
+        setShowPlayHint(false);
+        setSubtitleIndex(0);
+      },
+      onBoundary: (charIndex) => {
+        setSubtitleIndex(Math.max(0, Math.min(subtitleText.length, charIndex)));
+      },
+      onEnd: () => {
+        setIsSpeaking(false);
+        setSubtitleIndex(subtitleText.length);
+      },
+    });
 
   useEffect(() => {
-    const startSpeech = (force = false) =>
-      speakGreeting(friendName, {
-        force,
-        onStart: () => {
-          setIsSpeaking(true);
-          setSubtitleIndex(0);
-        },
-        onBoundary: (charIndex) => {
-          setSubtitleIndex(Math.max(0, Math.min(subtitleText.length, charIndex)));
-        },
-        onEnd: () => {
-          setIsSpeaking(false);
-          setSubtitleIndex(subtitleText.length);
-        },
-      });
-
     startSpeech(false);
 
     const startedAt = Date.now();
@@ -263,6 +265,7 @@ function Section1Greeting({ friendName }) {
       }
       if (Date.now() - startedAt > 6000) {
         window.clearInterval(retryId);
+        if (!window.__erikaGreetingSpoken) setShowPlayHint(true);
         return;
       }
       startSpeech(false);
@@ -281,10 +284,28 @@ function Section1Greeting({ friendName }) {
     };
   }, [friendName]);
 
+  useEffect(() => {
+    if (!isSpeaking) return;
+    const fallbackSubtitle = window.setInterval(() => {
+      setSubtitleIndex((prev) => Math.min(subtitleText.length, prev + 1));
+    }, 45);
+    return () => window.clearInterval(fallbackSubtitle);
+  }, [isSpeaking, subtitleText.length]);
+
   return (
     <Frame title="Greeting" section={1}>
       <div className="space-y-4">
         <ImageFallback src={ERIKA_CAKE} alt="Erika" className="mx-auto h-56 w-56 rounded-3xl object-cover" fallback="👧" />
+        <div className="flex justify-center">
+          <Button onClick={() => startSpeech(true)} style={{ background: google.blue }}>
+            Play Voice
+          </Button>
+        </div>
+        {showPlayHint && (
+          <div className="rounded-xl p-3 text-sm text-white" style={{ background: google.blue }}>
+            Tap Play Voice to start audio on this device.
+          </div>
+        )}
         <div
           className="min-h-[88px] rounded-2xl p-4 text-sm leading-7 text-white"
           style={{ background: "#EA4335" }}
