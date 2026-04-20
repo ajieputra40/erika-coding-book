@@ -911,20 +911,31 @@ export default function App() {
         </div>
 
         {!hasStarted && (
-          <motion.button
-            onClick={() => {
-              setHasStarted(true);
-              setIndex(0);
-              setGreetingPlayToken((v) => v + 1);
-            }}
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            whileTap={{ scale: 0.96 }}
-            className="fixed bottom-5 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-2xl px-4 py-3 text-sm font-black text-white shadow-xl"
-            style={{ background: "linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853)" }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[99] grid place-items-center bg-black/55 backdrop-blur-sm"
           >
-            Click here to start and celebrate with Erika
-          </motion.button>
+            <motion.button
+              onClick={() => {
+                setHasStarted(true);
+                setIndex(0);
+                setGreetingPlayToken((v) => v + 1);
+              }}
+              initial={{ scale: 0.92 }}
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              whileTap={{ scale: 0.94 }}
+              className="h-44 w-44 rounded-full p-4 text-center text-base font-black text-white shadow-2xl"
+              style={{ background: "linear-gradient(135deg, #4285F4, #EA4335, #FBBC05, #34A853)" }}
+            >
+              Click Here
+              <br />
+              Start and Celebrate
+              <br />
+              with Erika
+            </motion.button>
+          </motion.div>
         )}
       </div>
     </div>
