@@ -30,8 +30,10 @@ const ASSET_BASE = `${import.meta.env.BASE_URL}assets/`;
 const ERIKA_CHARACTER = `${ASSET_BASE}erika-character.png`;
 const ERIKA_CAKE = `${ASSET_BASE}erika-cake.png`;
 const ERIKA_FACE = `${ASSET_BASE}erika-face.png`;
+const ERIKA_GOOGLE = `${ASSET_BASE}erika-google.png`;
 const ERIKA_FACE_SAME = `${ASSET_BASE}faces/erika-same.png`;
 const ERIKA_FACE_DIFF = `${ASSET_BASE}faces/erika-different.png`;
+
 
 function getFriendName() {
   const p = new URLSearchParams(window.location.search);
@@ -839,6 +841,10 @@ export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const [greetingPlayToken, setGreetingPlayToken] = useState(0);
   const friendName = useMemo(() => getFriendName(), []);
+  const startName = useMemo(() => {
+    const p = new URLSearchParams(window.location.search);
+    return (p.get("name") || "Friend").trim();
+  }, []);
   const Current = sections[index];
   const sectionGuides = useMemo(
     () => [
@@ -926,14 +932,31 @@ export default function App() {
               animate={{ scale: [1, 1.04, 1] }}
               transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
               whileTap={{ scale: 0.94 }}
-              className="h-44 w-44 rounded-full p-4 text-center text-base font-black text-white shadow-2xl"
-              style={{ background: "linear-gradient(135deg, #4285F4, #EA4335, #FBBC05, #34A853)" }}
+              className="relative isolate flex h-48 w-48 flex-col items-center justify-between overflow-hidden rounded-full px-4 pb-5 pt-4 text-center font-black shadow-2xl"
+              style={{
+                background: "white",
+                color: google.ink,
+                boxShadow: "0 22px 50px rgba(0,0,0,0.35), 0 0 0 6px rgba(255,255,255,0.2)"
+              }}
             >
-              Click Here
-              <br />
-              Start and Celebrate
-              <br />
-              with Erika
+              <span className="pointer-events-none absolute -left-6 -top-4 h-20 w-20 rounded-full bg-white/20 blur-xl" />
+              <span className="pointer-events-none absolute -bottom-8 -right-5 h-24 w-24 rounded-full bg-black/20 blur-xl" />
+              <span className="mt-1 inline-flex rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.16em]">
+                <span style={{ color: google.blue }}>Tap</span>&nbsp;
+                <span style={{ color: google.red }}>To</span>&nbsp;
+                <span style={{ color: google.green }}>Start</span>
+              </span>
+              <span className="inline-block h-30 w-30 overflow-hidden rounded-full border-2 border-white/90">
+                <ImageFallback src={ERIKA_GOOGLE} alt="Erika" className="h-full w-full" fallback="👧" />
+              </span>
+              <span className="inline-block rounded-xl px-2 py-1 text-[11px] leading-tight">
+                <span style={{ color: google.blue }}>{`Hello ${startName}, `}</span>
+                <span style={{ color: google.red }}>let&apos;s </span>
+                <span style={{ color: google.yellow }}>play </span>
+                <span style={{ color: google.green }}>coding </span>
+                <span style={{ color: google.blue }}>with </span>
+                <span style={{ color: google.red }}>Erika!</span>
+              </span>
             </motion.button>
           </motion.div>
         )}
