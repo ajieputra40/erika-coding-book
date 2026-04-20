@@ -31,6 +31,7 @@ const ERIKA_CHARACTER = `${ASSET_BASE}erika-character.png`;
 const ERIKA_CAKE = `${ASSET_BASE}erika-cake.png`;
 const ERIKA_FACE = `${ASSET_BASE}erika-face.png`;
 const ERIKA_GOOGLE = `${ASSET_BASE}erika-google.png`;
+const ERIKA_BG_MUSIC = `${ASSET_BASE}music/erika-bg.mp3`;
 const ERIKA_FACE_SAME = `${ASSET_BASE}faces/erika-same.png`;
 const ERIKA_FACE_DIFF = `${ASSET_BASE}faces/erika-different.png`;
 
@@ -160,6 +161,42 @@ function speakSectionGuide(text, { force = false, speechKey } = {}) {
 
   synth.addEventListener?.("voiceschanged", onVoicesChanged);
   setTimeout(run, 400);
+}
+
+function playUiSfx(type = "success") {
+  if (typeof window === "undefined") return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  if (!window.__erikaSfxCtx) {
+    window.__erikaSfxCtx = new AudioCtx();
+  }
+  const ctx = window.__erikaSfxCtx;
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+
+  const tone = (freq, start, duration, wave = "sine", gain = 0.06) => {
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+    osc.type = wave;
+    osc.frequency.setValueAtTime(freq, start);
+    amp.gain.setValueAtTime(0.0001, start);
+    amp.gain.exponentialRampToValueAtTime(gain, start + 0.01);
+    amp.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    osc.connect(amp);
+    amp.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + duration + 0.02);
+  };
+
+  const t = ctx.currentTime + 0.01;
+  if (type === "fail") {
+    tone(260, t, 0.14, "sawtooth", 0.05);
+    tone(180, t + 0.12, 0.18, "triangle", 0.045);
+    return;
+  }
+  tone(540, t, 0.12, "sine", 0.05);
+  tone(760, t + 0.11, 0.16, "triangle", 0.06);
 }
 
 function ImageFallback({ src, alt, className, fallback }) {
@@ -317,7 +354,7 @@ function Section1Greeting({ friendName, hasStarted, greetingPlayToken }) {
   );
 }
 
-function Section2Maze() {
+function Section2Maze({ onSuccessSound }) {
   const size = 5;
   const cell = 52;
   const board = size * cell;
@@ -328,8 +365,11 @@ function Section2Maze() {
   const won = pos.x === goal.x && pos.y === goal.y;
 
   useEffect(() => {
-    if (won) setBurst((b) => b + 1);
-  }, [won]);
+    if (won) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+    }
+  }, [won, onSuccessSound]);
 
   const move = (dx, dy) => {
     setPos((prev) => {
@@ -409,14 +449,20 @@ function LetterBadge({ letter }) {
   );
 }
 
-function Section3Sequence() {
+function Section3Sequence({ onSuccessSound, onFailSound }) {
   const [picked, setPicked] = useState({ 2: "", 5: "" });
   const [burst, setBurst] = useState(0);
   const correct = picked[2] === "C" && picked[5] === "F";
 
   useEffect(() => {
-    if (correct) setBurst((b) => b + 1);
-  }, [correct]);
+    if (!picked[2] || !picked[5]) return;
+    if (correct) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+      return;
+    }
+    onFailSound?.();
+  }, [picked, correct, onSuccessSound, onFailSound]);
 
   const options = ["B", "C", "E", "F", "G"];
 
@@ -479,15 +525,21 @@ function Section3Sequence() {
   );
 }
 
-function Section4Debugging() {
+function Section4Debugging({ onSuccessSound, onFailSound }) {
   const oddIndex = useMemo(() => Math.floor(Math.random() * 9), []);
   const [picked, setPicked] = useState(null);
   const [burst, setBurst] = useState(0);
   const correct = picked === oddIndex;
 
   useEffect(() => {
-    if (correct) setBurst((b) => b + 1);
-  }, [correct]);
+    if (picked === null) return;
+    if (correct) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+      return;
+    }
+    onFailSound?.();
+  }, [picked, correct, onSuccessSound, onFailSound]);
 
   return (
     <Frame title="Debugging" section={4}>
@@ -521,7 +573,7 @@ function Section4Debugging() {
   );
 }
 
-function Section5Variable() {
+function Section5Variable({ onSuccessSound, onFailSound }) {
   const [items, setItems] = useState([
     { id: "apple", label: "Apple", emoji: "🍎", type: "fruit" },
     { id: "banana", label: "Banana", emoji: "🍌", type: "fruit" },
@@ -545,6 +597,8 @@ function Section5Variable() {
     const ok = item.type === bucketType;
     setResultOk(ok);
     setResultMsg(ok ? "Correct bucket!" : "Oops, wrong bucket.");
+    if (ok) onSuccessSound?.();
+    else onFailSound?.();
     setDropPulse(bucketType);
     setSelectedItemId("");
     setTimeout(() => setDropPulse(""), 350);
@@ -639,7 +693,7 @@ function Section5Variable() {
   );
 }
 
-function Section6Condition() {
+function Section6Condition({ onSuccessSound }) {
   const [flashlight, setFlashlight] = useState(false);
   const [lamp, setLamp] = useState(false);
   const [burst, setBurst] = useState(0);
@@ -647,9 +701,12 @@ function Section6Condition() {
   const prevLit = useRef(false);
 
   useEffect(() => {
-    if (lit && !prevLit.current) setBurst((b) => b + 1);
+    if (lit && !prevLit.current) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+    }
     prevLit.current = lit;
-  }, [lit]);
+  }, [lit, onSuccessSound]);
 
   return (
     <Frame title="Condition: Light the Room" section={6}>
@@ -679,14 +736,20 @@ function Section6Condition() {
   );
 }
 
-function Section7Decomposition() {
+function Section7Decomposition({ onSuccessSound, onFailSound }) {
   const [pick, setPick] = useState("");
   const [burst, setBurst] = useState(0);
   const ok = pick === "yellow";
 
   useEffect(() => {
-    if (ok) setBurst((b) => b + 1);
-  }, [ok]);
+    if (!pick) return;
+    if (ok) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+      return;
+    }
+    onFailSound?.();
+  }, [pick, ok, onSuccessSound, onFailSound]);
 
   return (
     <Frame title="Decomposition" section={7}>
@@ -708,7 +771,7 @@ function Section7Decomposition() {
   );
 }
 
-function Section8EncodeDecode() {
+function Section8EncodeDecode({ onSuccessSound, onFailSound }) {
   const base = useMemo(() => ["🍎", "🍌", "🥕"], []);
   const cards = useMemo(() => [...base, ...base].sort(() => Math.random() - 0.5), [base]);
   const [open, setOpen] = useState([]);
@@ -727,10 +790,12 @@ function Section8EncodeDecode() {
         setResultOk(true);
         setResultMsg("Correct! It's a match.");
         setMatched((p) => [...p, a, b]);
+        onSuccessSound?.();
         setTimeout(() => setOpen([]), 220);
       } else {
         setResultOk(false);
         setResultMsg("Not a match. Try again.");
+        onFailSound?.();
         setTimeout(() => setOpen([]), 700);
       }
     }
@@ -778,14 +843,20 @@ function Section8EncodeDecode() {
   );
 }
 
-function Section9Loop() {
+function Section9Loop({ onSuccessSound, onFailSound }) {
   const [answer, setAnswer] = useState("");
   const [burst, setBurst] = useState(0);
   const ok = answer === "🍌";
 
   useEffect(() => {
-    if (ok) setBurst((b) => b + 1);
-  }, [ok]);
+    if (!answer) return;
+    if (ok) {
+      setBurst((b) => b + 1);
+      onSuccessSound?.();
+      return;
+    }
+    onFailSound?.();
+  }, [answer, ok, onSuccessSound, onFailSound]);
 
   return (
     <Frame title="Loop Pattern" section={9}>
@@ -840,12 +911,19 @@ export default function App() {
   const [index, setIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [greetingPlayToken, setGreetingPlayToken] = useState(0);
+  const [musicEnabled, setMusicEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("erika-bg-music-enabled") === "1";
+  });
+  const bgMusicRef = useRef(null);
   const friendName = useMemo(() => getFriendName(), []);
   const startName = useMemo(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("name") || "Friend").trim();
   }, []);
   const Current = sections[index];
+  const playSuccessSound = () => playUiSfx("success");
+  const playFailSound = () => playUiSfx("fail");
   const sectionGuides = useMemo(
     () => [
       `Hi ${friendName}. Welcome to Erika's birthday coding adventure.`,
@@ -889,16 +967,65 @@ export default function App() {
     };
   }, [index, sectionGuides, hasStarted]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("erika-bg-music-enabled", musicEnabled ? "1" : "0");
+  }, [musicEnabled]);
+
+  useEffect(() => {
+    const audio = bgMusicRef.current;
+    if (!audio) return;
+    audio.volume = 0.2;
+    if (!hasStarted || !musicEnabled) {
+      audio.pause();
+      return;
+    }
+    audio.play().catch(() => {});
+  }, [hasStarted, musicEnabled]);
+
+  useEffect(() => {
+    const audio = bgMusicRef.current;
+    if (!audio) return;
+    const id = window.setInterval(() => {
+      const narrationSpeaking = Boolean(window.__erikaGreetingSpeaking || window.__erikaSectionSpeaking);
+      if (narrationSpeaking && !audio.paused) {
+        audio.pause();
+        return;
+      }
+      if (!narrationSpeaking && hasStarted && musicEnabled && audio.paused) {
+        audio.play().catch(() => {});
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [hasStarted, musicEnabled]);
+
   return (
     <div className="relative min-h-screen overflow-hidden p-3" style={{ background: "linear-gradient(180deg, #F8FAFD 0%, #EEF4FF 40%, #FFF9E8 100%)" }}>
+      <audio ref={bgMusicRef} src={ERIKA_BG_MUSIC} loop preload="auto" />
       <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full blur-3xl" style={{ background: "rgba(66,133,244,0.22)" }} />
       <div className="pointer-events-none absolute -right-16 top-40 h-52 w-52 rounded-full blur-3xl" style={{ background: "rgba(234,67,53,0.18)" }} />
       <div className="pointer-events-none absolute left-1/3 bottom-10 h-56 w-56 rounded-full blur-3xl" style={{ background: "rgba(251,188,5,0.18)" }} />
       <div className="pointer-events-none absolute right-1/4 bottom-28 h-52 w-52 rounded-full blur-3xl" style={{ background: "rgba(52,168,83,0.16)" }} />
       <div className="mx-auto max-w-md space-y-3">
         <div className="rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur" style={{ borderColor: google.line }}>
-          <div className="text-xs font-bold uppercase" style={{ color: "#5F6368" }}>Erika Coding Birthday Book</div>
-          <div className="text-lg font-black" style={{ color: google.ink }}>Mobile Sections</div>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="text-xs font-bold uppercase" style={{ color: "#5F6368" }}>Erika Coding Birthday Book</div>
+              <div className="text-lg font-black" style={{ color: google.ink }}>Mobile Sections</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMusicEnabled((v) => !v)}
+              className="rounded-full border px-3 py-1 text-[11px] font-bold"
+              style={{
+                borderColor: musicEnabled ? google.green : google.line,
+                color: musicEnabled ? google.green : "#5F6368",
+                background: musicEnabled ? "#E6F4EA" : "white",
+              }}
+            >
+              {musicEnabled ? "Music On" : "Music Off"}
+            </button>
+          </div>
           <div className="mt-3 h-2 w-full rounded-full" style={{ background: "#E8EAED" }}>
             <motion.div
               className="h-2 rounded-full"
@@ -910,7 +1037,13 @@ export default function App() {
           <div className="mt-1 text-xs" style={{ color: "#5F6368" }}>{index + 1}/{sections.length}</div>
         </div>
 
-        <Current friendName={friendName} hasStarted={hasStarted} greetingPlayToken={greetingPlayToken} />
+        <Current
+          friendName={friendName}
+          hasStarted={hasStarted}
+          greetingPlayToken={greetingPlayToken}
+          onSuccessSound={playSuccessSound}
+          onFailSound={playFailSound}
+        />
         <div className="grid grid-cols-2 gap-2 pb-4">
           <Button variant="outline" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}>Previous</Button>
           <Button disabled={index === sections.length - 1} onClick={() => setIndex((i) => Math.min(sections.length - 1, i + 1))}>Next</Button>
@@ -927,6 +1060,10 @@ export default function App() {
                 setHasStarted(true);
                 setIndex(0);
                 setGreetingPlayToken((v) => v + 1);
+                setMusicEnabled(true);
+                window.setTimeout(() => {
+                  bgMusicRef.current?.play().catch(() => {});
+                }, 0);
               }}
               initial={{ scale: 0.92 }}
               animate={{ scale: [1, 1.04, 1] }}
