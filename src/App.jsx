@@ -227,7 +227,7 @@ function Frame({ title, section, children }) {
   );
 }
 
-function Section1Greeting({ friendName }) {
+function Section1Greeting({ friendName, hasStarted, greetingPlayToken }) {
   const subtitleText = useMemo(
     () =>
       `Hi ${friendName}. Welcome to Erika's birthday coding adventure. Thank you for being Erika's friend and celebrating this special day.`,
@@ -235,14 +235,12 @@ function Section1Greeting({ friendName }) {
   );
   const [subtitleIndex, setSubtitleIndex] = useState(subtitleText.length);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [showPlayHint, setShowPlayHint] = useState(false);
 
   const startSpeech = (force = false) =>
     speakGreeting(friendName, {
       force,
       onStart: () => {
         setIsSpeaking(true);
-        setShowPlayHint(false);
         setSubtitleIndex(0);
       },
       onBoundary: (charIndex) => {
@@ -255,7 +253,9 @@ function Section1Greeting({ friendName }) {
     });
 
   useEffect(() => {
-    startSpeech(false);
+    if (!hasStarted) return;
+
+    startSpeech(greetingPlayToken > 0);
 
     const startedAt = Date.now();
     const retryId = window.setInterval(() => {
@@ -265,7 +265,6 @@ function Section1Greeting({ friendName }) {
       }
       if (Date.now() - startedAt > 6000) {
         window.clearInterval(retryId);
-        if (!window.__erikaGreetingSpoken) setShowPlayHint(true);
         return;
       }
       startSpeech(false);
@@ -282,7 +281,7 @@ function Section1Greeting({ friendName }) {
       window.clearInterval(retryId);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [friendName]);
+  }, [friendName, hasStarted, greetingPlayToken]);
 
   useEffect(() => {
     if (!isSpeaking) return;
@@ -296,16 +295,6 @@ function Section1Greeting({ friendName }) {
     <Frame title="Greeting" section={1}>
       <div className="space-y-4">
         <ImageFallback src={ERIKA_CAKE} alt="Erika" className="mx-auto h-56 w-56 rounded-3xl object-cover" fallback="👧" />
-        <div className="flex justify-center">
-          <Button onClick={() => startSpeech(true)} style={{ background: google.blue }}>
-            Play Voice
-          </Button>
-        </div>
-        {showPlayHint && (
-          <div className="rounded-xl p-3 text-sm text-white" style={{ background: google.blue }}>
-            Tap Play Voice to start audio on this device.
-          </div>
-        )}
         <div
           className="min-h-[88px] rounded-2xl p-4 text-sm leading-7 text-white"
           style={{ background: "#EA4335" }}
@@ -847,6 +836,8 @@ const sections = [
 
 export default function App() {
   const [index, setIndex] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [greetingPlayToken, setGreetingPlayToken] = useState(0);
   const friendName = useMemo(() => getFriendName(), []);
   const Current = sections[index];
   const sectionGuides = useMemo(
@@ -866,7 +857,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (index === 0) return;
+    if (!hasStarted || index === 0) return;
     const speechKey = `section-${index}`;
     const text = sectionGuides[index];
     const startSpeech = (force = false) => speakSectionGuide(text, { force, speechKey });
@@ -890,7 +881,7 @@ export default function App() {
       window.clearTimeout(retryId);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [index, sectionGuides]);
+  }, [index, sectionGuides, hasStarted]);
 
   return (
     <div className="relative min-h-screen overflow-hidden p-3" style={{ background: "linear-gradient(180deg, #F8FAFD 0%, #EEF4FF 40%, #FFF9E8 100%)" }}>
@@ -913,12 +904,28 @@ export default function App() {
           <div className="mt-1 text-xs" style={{ color: "#5F6368" }}>{index + 1}/{sections.length}</div>
         </div>
 
-        <Current friendName={friendName} />
-
+        <Current friendName={friendName} hasStarted={hasStarted} greetingPlayToken={greetingPlayToken} />
         <div className="grid grid-cols-2 gap-2 pb-4">
           <Button variant="outline" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}>Previous</Button>
           <Button disabled={index === sections.length - 1} onClick={() => setIndex((i) => Math.min(sections.length - 1, i + 1))}>Next</Button>
         </div>
+
+        {!hasStarted && (
+          <motion.button
+            onClick={() => {
+              setHasStarted(true);
+              setIndex(0);
+              setGreetingPlayToken((v) => v + 1);
+            }}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            whileTap={{ scale: 0.96 }}
+            className="fixed bottom-5 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2 rounded-2xl px-4 py-3 text-sm font-black text-white shadow-xl"
+            style={{ background: "linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853)" }}
+          >
+            Click here to start and celebrate with Erika
+          </motion.button>
+        )}
       </div>
     </div>
   );
