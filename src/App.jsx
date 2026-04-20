@@ -880,7 +880,7 @@ export default function App() {
       <div className="mx-auto max-w-md space-y-3">
         <div className="rounded-3xl border bg-white/95 p-4 shadow-sm backdrop-blur" style={{ borderColor: google.line }}>
           <div className="text-xs font-bold uppercase" style={{ color: "#5F6368" }}>Erika Coding Birthday Book</div>
-          <div className="text-lg font-black" style={{ color: google.ink }}>Mobile Sections</div>
+          <div className="text-lg font-black" style={{ color: google.ink }}>Mobile Sectionsssss</div>
           <div className="mt-3 h-2 w-full rounded-full" style={{ background: "#E8EAED" }}>
             <motion.div
               className="h-2 rounded-full"
