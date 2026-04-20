@@ -26,11 +26,12 @@ function GoogleColorBlocks({ className = "" }) {
   );
 }
 
-const ERIKA_CHARACTER = "/assets/erika-character.png";
-const ERIKA_CAKE = "/assets/erika-cake.png";
-const ERIKA_FACE = "/assets/erika-face.png";
-const ERIKA_FACE_SAME = "/assets/faces/erika-same.png";
-const ERIKA_FACE_DIFF = "/assets/faces/erika-different.png";
+const ASSET_BASE = `${import.meta.env.BASE_URL}assets/`;
+const ERIKA_CHARACTER = `${ASSET_BASE}erika-character.png`;
+const ERIKA_CAKE = `${ASSET_BASE}erika-cake.png`;
+const ERIKA_FACE = `${ASSET_BASE}erika-face.png`;
+const ERIKA_FACE_SAME = `${ASSET_BASE}faces/erika-same.png`;
+const ERIKA_FACE_DIFF = `${ASSET_BASE}faces/erika-different.png`;
 
 function getFriendName() {
   const p = new URLSearchParams(window.location.search);
