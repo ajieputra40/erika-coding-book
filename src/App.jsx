@@ -1083,7 +1083,7 @@ export default function App() {
                 <span style={{ color: google.red }}>To</span>&nbsp;
                 <span style={{ color: google.green }}>Start</span>
               </span>
-              <span className="inline-block h-30 w-30 overflow-hidden rounded-full border-2 border-white/90">
+              <span className="inline-block h-20 w-20 overflow-hidden rounded-full border-2 border-white/90">
                 <ImageFallback src={ERIKA_GOOGLE} alt="Erika" className="h-full w-full" fallback="👧" />
               </span>
               <span className="inline-block rounded-xl px-2 py-1 text-[11px] leading-tight">
